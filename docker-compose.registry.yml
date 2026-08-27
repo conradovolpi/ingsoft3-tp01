@@ -1,0 +1,59 @@
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: misgastos-db
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: misgastos
+      MYSQL_USER: misgastos_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    image: ghcr.io/conradovolpi/misgastos-backend:v0.1.0
+
+    container_name: misgastos-backend
+
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Port=3306;Database=misgastos;User=misgastos_user;Password=${DB_PASSWORD};"
+
+    ports:
+      - "5171:8080"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+  frontend:
+    image: ghcr.io/conradovolpi/misgastos-frontend:v0.1.0
+
+    container_name: misgastos-frontend
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+
+volumes:
+  mysql_data:
