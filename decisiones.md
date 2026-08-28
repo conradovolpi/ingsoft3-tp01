@@ -199,3 +199,35 @@ Entre las verificaciones realizadas se encuentran:
 * Ejecución del sistema mediante `docker-compose.registry.yml`.
 
 De esta forma, las configuraciones propuestas no se utilizaron únicamente por haber sido generadas por IA, sino que fueron comprobadas experimentalmente en el entorno local.
+
+# TP3 - Planificación y trazabilidad
+
+## Duración del sprint
+
+Se configuró un sprint de 2 semanas. Elegí esta duración porque permite trabajar con una iteración suficientemente corta como para revisar el avance con frecuencia, pero a la vez brinda tiempo suficiente para completar las tareas planificadas sin fragmentar demasiado el trabajo.
+
+## Límite de trabajo en progreso
+
+Se configuró un límite WIP de 2 elementos en la columna In Progress. Como el proyecto es realizado por una sola persona, se utilizó la regla de cantidad de integrantes más uno: 1 + 1 = 2. El segundo lugar permite continuar con otra tarea si la primera queda temporalmente bloqueada, sin acumular demasiado trabajo sin terminar.
+
+## Diagnóstico de la historia mal escrita
+
+La historia "Como desarrollador quiero crear la tabla usuarios para guardar los datos" está mal planteada porque describe una implementación técnica y no un valor observable para un usuario. Crear una tabla es una tarea técnica, no una historia de usuario.
+
+Una posible reescritura sería: "Como usuario quiero registrar mis datos en la aplicación para poder identificarme y gestionar mis gastos".
+
+## Problemas encontrados y soluciones
+
+Durante el desarrollo del TP se encontraron los siguientes problemas:
+
+- GitHub CLI (`gh`) no estaba instalada. Se instaló mediante `winget` y se verificó posteriormente con `gh --version`.
+- La autenticación de GitHub CLI no tenía inicialmente permiso para administrar Projects. Se agregó el scope `project` mediante `gh auth refresh -s project`.
+- El Project fue creado mediante GitHub CLI, por lo que los issues no se agregaron automáticamente. Se incorporaron manualmente utilizando `gh project item-add`.
+- La rama local `main` había divergido de `origin/main`. Antes de modificarla se creó una rama de respaldo y luego se sincronizó `main` con el estado remoto mediante `git reset --hard origin/main`.
+- Se verificó la trazabilidad configurando un Pull Request con `Closes #9`. Al mergearse a `main`, GitHub cerró automáticamente la tarea #9 y el Project la movió a Done.
+
+## Uso de Inteligencia Artificial
+
+Se utilizó ChatGPT como herramienta de asistencia para interpretar la guía del trabajo práctico, orientar el uso de Git y GitHub CLI, resolver los inconvenientes encontrados y asistir en la redacción de este documento.
+
+Los comandos y configuraciones sugeridos fueron verificados ejecutándolos sobre el repositorio y comprobando sus resultados directamente en GitHub. También se verificó la jerarquía de issues, el estado del tablero y el cierre automático de la tarea mediante el Pull Request antes de considerar completada cada etapa.
