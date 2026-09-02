@@ -231,3 +231,45 @@ Durante el desarrollo del TP se encontraron los siguientes problemas:
 Se utilizó ChatGPT como herramienta de asistencia para interpretar la guía del trabajo práctico, orientar el uso de Git y GitHub CLI, resolver los inconvenientes encontrados y asistir en la redacción de este documento.
 
 Los comandos y configuraciones sugeridos fueron verificados ejecutándolos sobre el repositorio y comprobando sus resultados directamente en GitHub. También se verificó la jerarquía de issues, el estado del tablero y el cierre automático de la tarea mediante el Pull Request antes de considerar completada cada etapa.
+
+# TP4 - Integración Continua: Pipelines as Code
+
+## Estructura del pipeline
+
+Se configuró un workflow de Integración Continua mediante GitHub Actions en el archivo `.github/workflows/ci.yml`.
+
+El workflow se ejecuta automáticamente en dos situaciones:
+
+- Cuando se abre o actualiza un Pull Request dirigido a `main`.
+- Cuando se realiza un push a `main`.
+
+El pipeline se dividió en dos jobs:
+
+- `build-backend`
+- `build-frontend`
+
+Cada job construye una imagen Docker utilizando el Dockerfile correspondiente creado en el TP2.
+
+Los jobs se ejecutan en paralelo porque el backend y el frontend pueden construirse de manera independiente. No existe una dependencia entre ambos builds, por lo que ejecutarlos en paralelo evita agregar una espera innecesaria al pipeline.
+
+Cada job se ejecuta en un runner independiente de GitHub Actions, por lo que no comparten filesystem ni los archivos generados durante la ejecución.
+
+## Uso de los Dockerfiles del proyecto
+
+Se decidió que el pipeline construya la aplicación utilizando los mismos Dockerfiles desarrollados en el TP2, en lugar de ejecutar directamente comandos como `dotnet publish` o `npm run build` desde el workflow.
+
+Esta decisión evita mantener dos definiciones distintas del proceso de construcción.
+
+De esta manera, el mismo procedimiento utilizado para generar las imágenes que posteriormente pueden ejecutarse o desplegarse es también el que verifica GitHub Actions.
+
+Esto reduce el riesgo de que el pipeline valide una forma de compilación diferente de la utilizada realmente por la aplicación.
+
+## Cache de capas
+
+Se configuró cache de capas de Docker mediante GitHub Actions.
+
+Para el backend se utilizó:
+
+```text
+cache-from: type=gha,scope=backend
+cache-to: type=gha,mode=max,scope=backend
