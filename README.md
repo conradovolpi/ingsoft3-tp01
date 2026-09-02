@@ -1,5 +1,5 @@
 # MisGastos — Ingeniería de Software III
-
+[![CI](https://github.com/conradovolpi/ingsoft3-tp01/actions/workflows/ci.yml/badge.svg)](https://github.com/conradovolpi/ingsoft3-tp01/actions/workflows/ci.yml)
 Aplicación web para registrar y consultar gastos personales.
 
 El sistema está compuesto por:
