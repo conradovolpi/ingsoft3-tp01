@@ -6,16 +6,18 @@ GitHub rechaza el push porque main está protegida y la regla alcanza también a
 
 ## 2. El PR de la rama B no se puede mergear: conflicto
 ![conflicto en PR](img/aviso_de_conflicto.png)
-Escribe aquí la línea explicativa de lo que se observa en esta captura.
 
-## 3. Tercera evidencia
+GitHub detecta que las ramas contienen cambios incompatibles y no puede realizar el merge automáticamente. El conflicto debe resolverse manualmente antes de poder integrar el Pull Request.
+
+## 3. Resolución manual del conflicto
 ![tercera evidencia](img/marcadores.png)
-Descripción breve de esta captura.
 
-## 4. Cuarta evidencia
+Git muestra los marcadores de conflicto para identificar los cambios de cada rama. Se revisó el contenido, se decidió qué versión conservar y luego se realizó un nuevo commit con el conflicto resuelto.
+
+## 4. Creación del tag
 ![cuarta evidencia](img/tag_creada.png)
-Descripción breve de esta captura.
 
+Se creó el tag `v1.0.0` para identificar la versión correspondiente al cierre del TP1. Posteriormente se publicó una Release en GitHub asociada a ese tag.
 ## TP2 — Contenedores
 
 ### 1. Sistema completo levantado con Docker Compose
