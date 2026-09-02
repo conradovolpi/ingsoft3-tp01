@@ -1,275 +1,144 @@
 # Decisiones del proyecto
 
+## TP1 — Git y flujo de trabajo
+
+### Conflicto entre ramas
+
+Durante el TP se trabajó mediante ramas y Pull Requests para evitar modificar directamente `main`.
+
+En un Pull Request apareció un conflicto porque dos ramas habían modificado la misma parte de un archivo de forma diferente. Git pudo detectar el conflicto, pero no resolverlo automáticamente porque no podía decidir qué versión era la correcta.
+
+Se resolvió manualmente revisando ambos cambios, eligiendo el contenido que debía conservarse y realizando un nuevo commit.
+
+El conflicto podría haberse evitado manteniendo las ramas actualizadas con `main`, integrando cambios con mayor frecuencia o evitando modificar simultáneamente la misma parte del archivo.
+
+También se configuró la protección de `main`, por lo que un `git push` directo es rechazado y los cambios deben ingresar mediante Pull Request.
+
+Al finalizar se creó el tag `v1.0.0` y su Release correspondiente.
+
+### Problemas e IA
+
+Los principales problemas fueron el conflicto entre ramas y el rechazo del push directo a `main`. Ambos fueron utilizados para verificar que el flujo de trabajo y la protección funcionaban correctamente.
+
+Se utilizó ChatGPT para interpretar comandos de Git, entender el conflicto y asistir en la documentación. Las sugerencias se verificaron ejecutando los comandos y comprobando los resultados en GitHub.
+
+
 ## TP2 — Contenedores
 
 ### Aplicación elegida
 
-Para el trabajo práctico se eligió **MisGastos**, una aplicación web para registrar y consultar gastos personales.
+Se eligió **MisGastos** porque era una aplicación acotada y comprensible que contaba con los elementos necesarios para el TP: frontend React/Vite, backend .NET, base de datos MySQL y tests/funcionalidades que permitían verificar su funcionamiento.
 
-La aplicación cumple con los requisitos del TP porque cuenta con:
+### Dockerfiles multi-stage
 
-* Backend desarrollado con ASP.NET Core .NET 10.
-* Frontend desarrollado con React y Vite.
-* Base de datos MySQL 8.
-* Operaciones para crear, consultar y administrar gastos.
-* Proyecto de tests para el backend y herramientas de testing en el frontend.
+Tanto backend como frontend utilizan Dockerfiles de dos etapas para separar construcción y ejecución.
 
-Se eligió esta aplicación porque tiene un tamaño acotado y permite comprender y modificar el código durante los próximos trabajos prácticos. Además, contiene las tres partes necesarias para trabajar durante el semestre: frontend, backend y persistencia de datos.
+En backend, la primera etapa utiliza el SDK de .NET para compilar y publicar; la segunda utiliza solamente el runtime para ejecutar la API.
 
-Antes de contenerizarla se verificó que la aplicación compilara y funcionara correctamente.
+En frontend, Node se utiliza para generar el build de React y luego nginx sirve los archivos estáticos generados.
 
-### Dockerfile del backend
+Esto permite que las imágenes finales no incluyan herramientas de compilación innecesarias y sean más pequeñas.
 
-Se utilizó un Dockerfile multi-stage.
+### Comunicación entre servicios
 
-La primera etapa utiliza:
+Docker Compose crea una red interna y los servicios se encuentran mediante sus nombres.
 
-```text
-mcr.microsoft.com/dotnet/sdk:10.0
-```
+El backend se conecta a MySQL mediante `db:3306` y no mediante `localhost`, porque dentro de un contenedor `localhost` representa al propio contenedor.
 
-Esta imagen contiene el SDK necesario para restaurar dependencias y compilar/publicar la aplicación.
+El frontend utiliza nginx para reenviar las solicitudes `/api` hacia `backend:8080`.
 
-La segunda etapa utiliza:
+### Healthcheck y depends_on
 
-```text
-mcr.microsoft.com/dotnet/aspnet:10.0
-```
+`depends_on` expresa que el backend depende de la base de datos y controla el orden de arranque.
 
-Esta imagen contiene únicamente el runtime necesario para ejecutar la API.
+El `healthcheck` verifica que MySQL esté realmente listo para aceptar conexiones. Por eso se utiliza `condition: service_healthy`: no alcanza con que el contenedor esté iniciado, la base debe estar operativa.
 
-Se eligió esta estructura para evitar incluir el SDK completo en la imagen final, reduciendo el tamaño y la superficie de ataque.
+### Secretos y persistencia
 
-La imagen del SDK ocupa aproximadamente 1.25 GB, mientras que la imagen final del backend ocupa aproximadamente 350 MB.
+Las variables reales se almacenan localmente en `.env`, que está excluido mediante `.gitignore`.
 
-También se agregó un `.dockerignore` para excluir directorios como `bin`, `obj` y resultados de tests.
+El repositorio contiene `.env.example` para indicar qué variables necesita configurar quien clone el proyecto, sin publicar valores privados.
 
-### Dockerfile del frontend
+Los datos de MySQL se guardan en el volumen `mysql_data`, por lo que no dependen de la vida del contenedor.
 
-También se utilizó un Dockerfile multi-stage.
+Las imágenes del backend y frontend fueron publicadas en GHCR. `docker-compose.registry.yml` utiliza esas imágenes mediante `image:` en lugar de construirlas localmente.
 
-La primera etapa utiliza:
+### Problemas e IA
 
-```text
-node:22-alpine
-```
+Durante el TP hubo problemas con la conexión a MySQL usando `localhost`, la configuración del proxy de nginx, variables de entorno y el healthcheck. Se corrigieron verificando la comunicación entre frontend, backend y base de datos.
 
-Node se utiliza únicamente para instalar las dependencias y ejecutar el build de React/Vite.
+Se utilizó ChatGPT para revisar Dockerfiles, Docker Compose, nginx e interpretar errores. Todo se verificó levantando el sistema y probando su funcionamiento.
 
-La segunda etapa utiliza:
 
-```text
-nginx:alpine
-```
+## TP3 — Planificación y trazabilidad
 
-nginx sirve los archivos estáticos generados en `dist`.
+### Sprint
 
-La imagen final del frontend ocupa aproximadamente 93.7 MB.
+Se eligió un sprint de 2 semanas porque permite tener ciclos cortos de trabajo y feedback sin fragmentar demasiado las tareas.
 
-Se utilizó `npm ci` en lugar de `npm install` dentro del Dockerfile para instalar exactamente las versiones definidas en `package-lock.json`.
+### Límite WIP
 
-También se creó un `.dockerignore` para evitar copiar `node_modules`, `dist` y otros archivos innecesarios al contexto de construcción.
+Se configuró un WIP de 2 elementos en `In Progress`.
 
-### Comunicación entre frontend y backend
+Al trabajar una sola persona, este límite permite concentrarse en terminar el trabajo iniciado y, al mismo tiempo, disponer de un segundo lugar si una tarea queda bloqueada.
 
-El frontend utiliza rutas relativas:
+### Historia mal escrita
 
-```text
-/api/...
-```
+La historia "Como desarrollador quiero crear la tabla usuarios para guardar los datos" estaba mal planteada porque describe una solución técnica y no valor para un usuario.
 
-En producción, nginx recibe estas solicitudes y las reenvía al servicio del backend:
+Una mejor versión sería:
 
-```text
-backend:8080
-```
+"Como usuario quiero registrar mis datos para poder identificarme y gestionar mis gastos."
 
-Se eligió este mecanismo para evitar escribir una URL absoluta del backend en el código del frontend y para permitir que los servicios se comuniquen mediante la red interna de Docker Compose.
+Crear la tabla sería una tarea técnica necesaria para implementar esa historia.
 
-### Base de datos y persistencia
+### Trazabilidad
 
-Se utiliza MySQL 8 como servicio `db`.
+Se relacionaron épica, historia, tarea, Pull Request y commit.
 
-El backend accede a la base de datos mediante:
+Se verificó usando `Closes #9`: al mergear el Pull Request a `main`, GitHub cerró automáticamente la tarea y la movió a `Done`.
 
-```text
-Server=db;Port=3306
-```
+### Problemas e IA
 
-`db` no es una dirección IP, sino el nombre del servicio definido en Docker Compose. Docker proporciona resolución DNS interna entre los servicios.
+Fue necesario instalar GitHub CLI, agregar permisos para Projects, incorporar issues al Project y sincronizar una rama `main` que había divergido de `origin/main`.
 
-La información de MySQL se guarda en un volumen nombrado:
+Se utilizó ChatGPT para interpretar la guía, comandos de Git/GitHub CLI y resolver estos inconvenientes. Los resultados fueron comprobados directamente en GitHub.
 
-```text
-mysql_data
-```
 
-Se verificó que:
+## TP4 — Integración Continua
 
-* `docker compose down` elimina los contenedores pero conserva los datos.
-* `docker compose up -d` vuelve a levantar el sistema con los datos existentes.
-* `docker compose down -v` elimina también el volumen y, por lo tanto, los datos almacenados.
+### Jobs y ejecución en paralelo
 
-### Healthcheck y orden de arranque
+Se creó `.github/workflows/ci.yml` con dos jobs: `build-backend` y `build-frontend`.
 
-MySQL cuenta con un `healthcheck` basado en `mysqladmin ping`.
+Se separaron porque ambos componentes pueden construirse independientemente. Al no existir dependencia entre ellos, GitHub Actions puede ejecutarlos en paralelo y reducir el tiempo total del pipeline.
 
-El backend utiliza:
+### Dockerfiles
 
-```text
-depends_on:
-  db:
-    condition: service_healthy
-```
+Cada job construye utilizando los mismos Dockerfiles creados en TP2.
 
-Esto permite que el backend espere a que MySQL esté realmente disponible para recibir conexiones.
+Esto evita tener un proceso de build distinto para CI y permite comprobar que las imágenes reales del proyecto siguen pudiendo construirse correctamente.
 
-Se decidió utilizar esta combinación porque `depends_on` por sí solo solamente asegura el orden de inicio de los contenedores, pero no garantiza que la base de datos esté lista.
+### Cache
 
-### Manejo de secretos
+Se configuró cache de capas Docker con scopes separados para backend y frontend.
 
-Las contraseñas de MySQL no se escriben directamente en `docker-compose.yml`.
+El cache permite reutilizar capas que no cambiaron y acelerar ejecuciones posteriores.
 
-Se utilizan variables provenientes del archivo:
+Si el cache desaparece, el pipeline sigue funcionando: Docker simplemente debe reconstruir las capas desde cero y tarda más.
 
-```text
-.env
-```
+### Required checks
 
-Este archivo está incluido en `.gitignore` y no se versiona.
+Se configuraron checks requeridos sobre `main`.
 
-En el repositorio se incluye:
+Se comprobó con un Pull Request cuyo pipeline quedó en rojo: GitHub bloqueó el merge. Luego se corrigió el problema, se realizó un nuevo commit y el workflow volvió a ejecutarse.
 
-```text
-.env.example
-```
+Cuando los jobs quedaron en verde, el merge volvió a estar habilitado.
 
-para indicar qué variables necesita configurar una persona que clone el proyecto.
+También se agregó al README un badge que informa el estado del workflow.
 
-### Registry
+### Problemas e IA
 
-Las imágenes del backend y frontend fueron publicadas en GitHub Container Registry con una versión semántica:
+Los principales puntos fueron configurar correctamente el workflow, el cache y los required status checks, además de comprobar el caso rojo → corrección → verde.
 
-```text
-ghcr.io/conradovolpi/misgastos-backend:v0.1.0
-ghcr.io/conradovolpi/misgastos-frontend:v0.1.0
-```
-
-Ambas imágenes fueron configuradas como públicas.
-
-Se verificó la visibilidad pública cerrando la sesión de GHCR con `docker logout` y realizando posteriormente un `docker pull` de ambas imágenes sin credenciales.
-
-También se creó `docker-compose.registry.yml`, que utiliza las imágenes publicadas mediante `image:` en lugar de construirlas mediante `build:`.
-
-Se verificó que el sistema completo funcione utilizando este archivo.
-
-### Problemas encontrados y resolución
-
-Durante el desarrollo se encontraron los siguientes puntos:
-
-* La aplicación inicialmente utilizaba `localhost` para acceder a MySQL. Dentro de Docker, `localhost` representa al propio contenedor, por lo que en Compose se cambió la conexión a `db:3306`.
-* Las contraseñas estaban inicialmente escritas en `docker-compose.yml`. Se reemplazaron por variables provenientes de `.env`.
-* Faltaban archivos `.dockerignore` para evitar copiar artefactos generados localmente.
-* El frontend necesitaba configurar nginx como proxy para reenviar las solicitudes `/api` al backend.
-* La aplicación estaba inicialmente fuera del repositorio utilizado en el TP1. Se incorporó al mismo repositorio del semestre y se trabajó sobre una rama específica para el TP2.
-
-### Uso de Inteligencia Artificial
-
-Se utilizó ChatGPT como herramienta de asistencia durante el desarrollo del TP2.
-
-La asistencia se utilizó principalmente para:
-
-* Revisar la estructura de los Dockerfiles.
-* Configurar Docker Compose.
-* Configurar nginx como proxy.
-* Interpretar errores y salidas de Docker.
-* Preparar la documentación del trabajo práctico.
-
-Las propuestas realizadas con asistencia de IA fueron verificadas ejecutando los comandos y comprobando directamente el funcionamiento del sistema.
-
-Entre las verificaciones realizadas se encuentran:
-
-* Construcción exitosa de las imágenes de backend y frontend.
-* Ejecución completa del sistema con `docker compose up -d`.
-* Comunicación frontend → backend → MySQL.
-* Prueba de persistencia del volumen.
-* Eliminación de datos mediante `docker compose down -v`.
-* Publicación de ambas imágenes en GHCR.
-* Descarga de las imágenes públicas sin autenticación.
-* Ejecución del sistema mediante `docker-compose.registry.yml`.
-
-De esta forma, las configuraciones propuestas no se utilizaron únicamente por haber sido generadas por IA, sino que fueron comprobadas experimentalmente en el entorno local.
-
-# TP3 - Planificación y trazabilidad
-
-## Duración del sprint
-
-Se configuró un sprint de 2 semanas. Elegí esta duración porque permite trabajar con una iteración suficientemente corta como para revisar el avance con frecuencia, pero a la vez brinda tiempo suficiente para completar las tareas planificadas sin fragmentar demasiado el trabajo.
-
-## Límite de trabajo en progreso
-
-Se configuró un límite WIP de 2 elementos en la columna In Progress. Como el proyecto es realizado por una sola persona, se utilizó la regla de cantidad de integrantes más uno: 1 + 1 = 2. El segundo lugar permite continuar con otra tarea si la primera queda temporalmente bloqueada, sin acumular demasiado trabajo sin terminar.
-
-## Diagnóstico de la historia mal escrita
-
-La historia "Como desarrollador quiero crear la tabla usuarios para guardar los datos" está mal planteada porque describe una implementación técnica y no un valor observable para un usuario. Crear una tabla es una tarea técnica, no una historia de usuario.
-
-Una posible reescritura sería: "Como usuario quiero registrar mis datos en la aplicación para poder identificarme y gestionar mis gastos".
-
-## Problemas encontrados y soluciones
-
-Durante el desarrollo del TP se encontraron los siguientes problemas:
-
-- GitHub CLI (`gh`) no estaba instalada. Se instaló mediante `winget` y se verificó posteriormente con `gh --version`.
-- La autenticación de GitHub CLI no tenía inicialmente permiso para administrar Projects. Se agregó el scope `project` mediante `gh auth refresh -s project`.
-- El Project fue creado mediante GitHub CLI, por lo que los issues no se agregaron automáticamente. Se incorporaron manualmente utilizando `gh project item-add`.
-- La rama local `main` había divergido de `origin/main`. Antes de modificarla se creó una rama de respaldo y luego se sincronizó `main` con el estado remoto mediante `git reset --hard origin/main`.
-- Se verificó la trazabilidad configurando un Pull Request con `Closes #9`. Al mergearse a `main`, GitHub cerró automáticamente la tarea #9 y el Project la movió a Done.
-
-## Uso de Inteligencia Artificial
-
-Se utilizó ChatGPT como herramienta de asistencia para interpretar la guía del trabajo práctico, orientar el uso de Git y GitHub CLI, resolver los inconvenientes encontrados y asistir en la redacción de este documento.
-
-Los comandos y configuraciones sugeridos fueron verificados ejecutándolos sobre el repositorio y comprobando sus resultados directamente en GitHub. También se verificó la jerarquía de issues, el estado del tablero y el cierre automático de la tarea mediante el Pull Request antes de considerar completada cada etapa.
-
-# TP4 - Integración Continua: Pipelines as Code
-
-## Estructura del pipeline
-
-Se configuró un workflow de Integración Continua mediante GitHub Actions en el archivo `.github/workflows/ci.yml`.
-
-El workflow se ejecuta automáticamente en dos situaciones:
-
-- Cuando se abre o actualiza un Pull Request dirigido a `main`.
-- Cuando se realiza un push a `main`.
-
-El pipeline se dividió en dos jobs:
-
-- `build-backend`
-- `build-frontend`
-
-Cada job construye una imagen Docker utilizando el Dockerfile correspondiente creado en el TP2.
-
-Los jobs se ejecutan en paralelo porque el backend y el frontend pueden construirse de manera independiente. No existe una dependencia entre ambos builds, por lo que ejecutarlos en paralelo evita agregar una espera innecesaria al pipeline.
-
-Cada job se ejecuta en un runner independiente de GitHub Actions, por lo que no comparten filesystem ni los archivos generados durante la ejecución.
-
-## Uso de los Dockerfiles del proyecto
-
-Se decidió que el pipeline construya la aplicación utilizando los mismos Dockerfiles desarrollados en el TP2, en lugar de ejecutar directamente comandos como `dotnet publish` o `npm run build` desde el workflow.
-
-Esta decisión evita mantener dos definiciones distintas del proceso de construcción.
-
-De esta manera, el mismo procedimiento utilizado para generar las imágenes que posteriormente pueden ejecutarse o desplegarse es también el que verifica GitHub Actions.
-
-Esto reduce el riesgo de que el pipeline valide una forma de compilación diferente de la utilizada realmente por la aplicación.
-
-## Cache de capas
-
-Se configuró cache de capas de Docker mediante GitHub Actions.
-
-Para el backend se utilizó:
-
-```text
-cache-from: type=gha,scope=backend
-cache-to: type=gha,mode=max,scope=backend
+Se utilizó ChatGPT para revisar el workflow, interpretar errores y comprender la configuración de GitHub Actions. Todo se verificó mediante ejecuciones reales del pipeline.
