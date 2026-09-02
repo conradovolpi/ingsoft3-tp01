@@ -143,3 +143,4 @@ Para detenerlo y eliminar también el volumen de la base de datos:
 ```bash
 docker compose down -v
 ```
+
