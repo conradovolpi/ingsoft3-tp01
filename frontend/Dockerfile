@@ -1,3 +1,4 @@
+# ---- Etapa 1: build ----
 FROM node:22-alpine AS build
 
 WORKDIR /app
@@ -11,6 +12,13 @@ COPY . .
 RUN npm run build
 
 
+# ---- Etapa 2: tests ----
+FROM build AS test
+
+ENTRYPOINT ["npm", "run", "test:ci"]
+
+
+# ---- Etapa 3: nginx ----
 FROM nginx:alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
