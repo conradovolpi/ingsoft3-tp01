@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MisGastos.Api.Data;
+using MisGastos.Api.Repositories;
+using MisGastos.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         new MySqlServerVersion(new Version(8, 0, 0))
     )
 );
+
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
+builder.Services.AddScoped<ExpenseService>();
 
 var app = builder.Build();
 
