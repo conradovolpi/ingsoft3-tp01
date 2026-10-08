@@ -14,3 +14,10 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+# Reportes generados por tests / coverage
+frontend/coverage/
+frontend-coverage/
+coveragereport/
+TestResults/
+backend/MisGastos.Tests/TestResults/
+backend/MisGastos.Tests/coverage.cobertura.xml
