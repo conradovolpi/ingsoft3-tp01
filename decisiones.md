@@ -142,3 +142,151 @@ También se agregó al README un badge que informa el estado del workflow.
 Los principales puntos fueron configurar correctamente el workflow, el cache y los required status checks, además de comprobar el caso rojo → corrección → verde.
 
 Se utilizó ChatGPT para revisar el workflow, interpretar errores y comprender la configuración de GitHub Actions. Todo se verificó mediante ejecuciones reales del pipeline.
+
+---
+
+# TP5 — Testing, coverage y quality gate
+
+## Tests realizados
+
+### Backend
+Se implementaron 8 métodos de test sobre distintas reglas de `ExpenseService`, incluyendo:
+
+- validación de mes y año,
+- validación de monto y descripción,
+- cálculo del total mensual,
+- agrupación por categoría,
+- y guardado de un gasto mediante mock.
+
+Se utilizaron `[Theory]`, `[InlineData]`, casos de error y `Mock<IExpenseRepository>`.
+
+### Frontend
+Se agregaron unit tests sin DOM sobre `expenseService` y `expenseLevel`.
+
+Se utilizaron:
+
+- `it.each`,
+- casos de error,
+- y mocks con `vi.fn()` para reemplazar `fetch`.
+
+## Refactor para poder mockear
+
+El controller accedía directamente a `AppDbContext`.
+
+Se separó la lógica en:
+
+`Controller → ExpenseService → IExpenseRepository → ExpenseRepository → AppDbContext`
+
+Esto permitió reemplazar el repositorio real por un mock y probar la lógica sin usar MySQL.
+
+## Coverage y umbrales
+
+### Backend
+Coverage medido:
+
+- Lines: 38,18 %
+- Branches: 56,25 %
+
+Umbrales:
+
+- Lines: 35 %
+- Branches: 50 %
+
+### Frontend
+Coverage medido:
+
+- Lines: 75 %
+- Branches: 50 %
+
+Umbrales:
+
+- Lines: 70 %
+- Branches: 45 %
+
+Los valores se eligieron en función de la cobertura real, dejando un margen pequeño para que una regresión haga fallar el pipeline.
+
+## Exclusiones de coverage
+
+En backend se excluyeron:
+
+- `Program`
+- `AppDbContext`
+- Models
+- Migrations
+- código generado por OpenAPI
+
+No se excluyeron `ExpenseService`, `ExpenseRepository` ni `ExpensesController`.
+
+En frontend se configuró:
+
+`include: ['src/services/**']`
+
+para medir la lógica testeada y no componentes de presentación.
+
+## Coverage alto no garantiza calidad
+
+Coverage mide qué código se ejecutó, no si fue correctamente verificado.
+
+Por ejemplo, llamar a `getExpenseLevel(5000)` sin un `expect` aumenta coverage, pero no comprueba que el resultado sea correcto.
+
+## Rama sin cubrir
+
+Se identificó como camino posible la validación de mes inválido en `GetMonthlySummaryAsync`.
+
+Una entrada que lo recorrería es:
+
+`month = 13`
+
+La regla ya se prueba directamente en los tests parametrizados de `IsValidMonth`, por lo que no se agregó otro test en esta etapa.
+
+## Quality gate
+
+Los jobs `build-backend` y `build-frontend` del TP4 se extendieron para:
+
+- ejecutar tests,
+- medir coverage,
+- comparar contra los umbrales,
+- publicar reportes,
+- y fallar si la cobertura baja.
+
+Así, un cambio puede compilar y tener todos los tests existentes en verde, pero igualmente quedar bloqueado por calidad.
+
+## Demostración del gate
+
+Se agregó código nuevo sin tests.
+
+Todos los tests existentes pasaron, pero el coverage del frontend cayó a:
+
+- Lines: 52,17 %
+- Branches: 28,57 %
+
+Como los umbrales eran 70 % y 45 %, `build-frontend` quedó rojo y el merge fue bloqueado.
+
+Luego se agregaron los tests faltantes, el coverage volvió a superar el umbral y el PR pudo mergearse.
+
+PR rojo → verde → merge:
+
+https://github.com/conradovolpi/ingsoft3-tp01/pull/20
+
+Corrida roja:
+[PEGAR URL]
+
+Corrida verde:
+[PEGAR URL]
+
+Segundo PR rojo abierto hasta la defensa:
+[PEGAR URL]
+
+## Problemas encontrados
+
+El coverage inicial del backend incluía código generado y no representaba bien la lógica testeada. Se ajustaron las exclusiones para medir solo código relevante.
+
+En frontend se limitó la medición a `src/services/**`.
+
+También se agregaron los reportes generados al `.gitignore` para no versionarlos.
+
+## Uso de IA
+
+Se utilizó ChatGPT como apoyo para diseñar los tests, configurar mocks, coverage, thresholds, Docker y GitHub Actions.
+
+Todo fue verificado ejecutando los tests localmente, dentro de Docker y en Pull Requests reales de GitHub.
