@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using MisGastos.Api.Data;
 using MisGastos.Api.Repositories;
@@ -8,14 +9,31 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Falta configurar DefaultConnection");
+
+var dbProvider = builder.Configuration["DB_PROVIDER"] ?? "mysql";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
-        connectionString,
-        new MySqlServerVersion(new Version(8, 0, 0))
-    )
-);
+{
+    if (dbProvider.Equals("postgres", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else if (dbProvider.Equals("mysql", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseMySql(
+            connectionString,
+            new MySqlServerVersion(new Version(8, 0, 0))
+        );
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            $"Proveedor de base de datos no soportado: {dbProvider}");
+    }
+});
 
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<ExpenseService>();
@@ -26,8 +44,17 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    db.Database.Migrate();
+    if (dbProvider.Equals("postgres", StringComparison.OrdinalIgnoreCase))
+    {
+        db.Database.EnsureCreated();
+    }
+    else
+    {
+        db.Database.Migrate();
+    }
 }
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
 
