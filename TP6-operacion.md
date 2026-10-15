@@ -49,6 +49,14 @@ Render confirmó `live` a las 21:43:30 UTC. El log muestra escucha en
 `http://0.0.0.0:8080`; las consultas públicas posteriores devolvieron HTTP 200
 para `/health` y `/api/expenses`. No se cambiaron credenciales ni TLS.
 
+El frontend devolvió HTTP 200 en `/` pero 502 en `/api/expenses`. Se configuró
+su `BACKEND_URL=https://misgastos-api-prod-fznx.onrender.com`, conservando las
+demás variables. Render aplicó el cambio mediante el deploy
+`dep-db8kk5k9v7es73ek1sog` del mismo SHA, confirmado `live`. La consulta
+pública posterior del proxy `/api/expenses` devolvió HTTP 200 (2,50 segundos).
+No se consultó el valor anterior de BACKEND_URL, por lo que no se afirma
+qué URL tenía antes del cambio.
+
 Corrección necesaria en GitHub: reemplazar `RENDER_HOOK_API_PROD` en el
 ámbito efectivo del job por el deploy hook del servicio PROD indicado arriba.
 Comprobar también si hay un secret homónimo en el environment `production`
@@ -85,8 +93,13 @@ Referencia: https://render.com/docs/deploy-hooks
 
 El workflow valida que las URLs del smoke test estén definidas, informa el
 número de intento en PROD y limita los jobs de despliegue a 30 minutos.
+También consulta gastos mediante el frontend y rechaza un hook API PROD
+que no pertenezca al servicio `srv-db832vmq1p3s739cpto0`. Si se recrea ese
+servicio, actualizar el identificador mediante un PR junto con su secret.
 Estos cambios mejoran el diagnóstico; no resuelven por sí mismos el backend
 ni la verificación del SHA desplegado.
+
+PR de preparación: https://github.com/conradovolpi/ingsoft3-tp01/pull/31.
 
 ## Release v6.0.0 (pendiente)
 

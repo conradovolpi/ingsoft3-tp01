@@ -19,6 +19,11 @@ y las consultas públicas de `/health` y `/api/expenses` devolvieron HTTP 200.
 La corrección del secret del hook y la verificación del pipeline completo
 siguen pendientes antes de cerrar el TP6.
 
+El frontend devolvía 502 al consultar gastos. Se estableció BACKEND_URL en
+la URL pública del backend PROD y se verificó HTTP 200 a través del proxy.
+El workflow propuesto comprueba también ese recorrido y rechaza hooks API
+PROD cuyo servicio no sea el esperado, evitando repetir el despliegue en QA.
+
 Se prepararon validaciones de URLs, mensajes por intento y límites de tiempo
 en los jobs de despliegue. No se considera suficiente recibir HTTP 200:
 también se debe comprobar que Render haya desplegado el SHA solicitado.
