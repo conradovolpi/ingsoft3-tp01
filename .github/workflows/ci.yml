@@ -187,7 +187,7 @@ jobs:
         shell: bash
         env:
           URL_API: https://misgastos-api-qa-volpi.onrender.com
-          URL_FRONT: https://misgastos-api-qa-olbs.onrender.com
+          URL_FRONT: https://misgastos-front-qa-6v5o.onrender.com
         run: |
           echo "Esperando que QA responda..."
 
