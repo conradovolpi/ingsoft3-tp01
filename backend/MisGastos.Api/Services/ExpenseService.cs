@@ -37,17 +37,26 @@ public class ExpenseService
         return true;
     }
 
-    public async Task<Expense> CreateExpenseAsync(Expense expense)
+ 
+public async Task<Expense> CreateExpenseAsync(Expense expense)
+{
+    if (!IsValidExpense(expense))
     {
-        if (!IsValidExpense(expense))
-        {
-            throw new ArgumentException("El gasto no es válido.");
-        }
-
-        await _repository.AddAsync(expense);
-
-        return expense;
+        throw new ArgumentException("El gasto no es válido.");
     }
+
+    // Guardar la fecha del gasto en UTC.
+    // Conservamos el día seleccionado por el usuario.
+    expense.Date = DateTime.SpecifyKind(
+        expense.Date.Date,
+        DateTimeKind.Utc
+    );
+
+    await _repository.AddAsync(expense);
+
+    return expense;
+}
+
 
     public async Task<MonthlySummary> GetMonthlySummaryAsync(int year, int month)
     {

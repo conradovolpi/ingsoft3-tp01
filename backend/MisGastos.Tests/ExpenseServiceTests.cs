@@ -179,4 +179,37 @@ public class ExpenseServiceTests
             Times.Once
         );
     }
+
+    [Fact]
+    public async Task CreateExpenseAsync_FechaSinZona_SeGuardaEnUtc()
+    {
+        // Arrange
+        var repository = new Mock<IExpenseRepository>();
+        var service = new ExpenseService(repository.Object);
+
+        var expense = new Expense
+        {
+            Description = "Supermercado",
+            Amount = 1500,
+            Category = "Comida",
+            Date = new DateTime(2026, 10, 14, 15, 30, 0,
+                DateTimeKind.Unspecified)
+        };
+
+        // Act
+        await service.CreateExpenseAsync(expense);
+
+        // Assert
+        Assert.Equal(DateTimeKind.Utc, expense.Date.Kind);
+        Assert.Equal(new DateTime(2026, 10, 14), expense.Date.Date);
+        Assert.Equal(TimeSpan.Zero, expense.Date.TimeOfDay);
+
+        repository.Verify(
+            r => r.AddAsync(It.Is<Expense>(
+                e => e.Date.Kind == DateTimeKind.Utc
+            )),
+            Times.Once
+        );
+    }
+
 }
