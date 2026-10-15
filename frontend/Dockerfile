@@ -1,3 +1,4 @@
+
 # ---- Etapa 1: build ----
 FROM node:22-alpine AS build
 
@@ -21,9 +22,13 @@ ENTRYPOINT ["npm", "run", "test:ci"]
 # ---- Etapa 3: nginx ----
 FROM nginx:alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Valores por defecto para Docker Compose local
+ENV BACKEND_URL=http://backend:8080 \
+    DNS_RESOLVER=127.0.0.11
 
 EXPOSE 80
 
