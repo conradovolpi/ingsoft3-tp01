@@ -170,6 +170,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 30
     environment: qa
 
     steps:
@@ -189,6 +190,8 @@ jobs:
           URL_API: https://misgastos-api-qa-volpi.onrender.com
           URL_FRONT: https://misgastos-front-qa-6v5o.onrender.com
         run: |
+          : "${URL_API:?Falta URL_API}"
+          : "${URL_FRONT:?Falta URL_FRONT}"
           echo "Esperando que QA responda..."
 
           for i in $(seq 1 30); do
@@ -212,6 +215,7 @@ jobs:
   deploy-prod:
     runs-on: ubuntu-latest
     needs: deploy-qa
+    timeout-minutes: 30
     environment: production
 
     concurrency:
@@ -233,7 +237,10 @@ jobs:
           URL_API: ${{ vars.URL_API_PROD }}
           URL_FRONT: ${{ vars.URL_FRONT_PROD }}
         run: |
+          : "${URL_API:?Falta URL_API_PROD en el environment production}"
+          : "${URL_FRONT:?Falta URL_FRONT_PROD en el environment production}"
           for i in $(seq 1 30); do
+            echo "PROD: intento $i de 30"
             if curl -fsS --max-time 10 "$URL_API/health" &&
                curl -fsS --max-time 10 "$URL_API/api/expenses" > /dev/null &&
                curl -fsS --max-time 10 "$URL_FRONT/" > /dev/null; then

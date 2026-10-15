@@ -1,5 +1,35 @@
 # Decisiones del proyecto
 
+## TP6 — CI/CD y operación (en preparación)
+
+Se revisó `main` en `a3636bb`. El pipeline despliega primero QA y luego
+PROD mediante el environment `production`. La aprobación manual depende
+de los required reviewers configurados en GitHub, todavía sin comprobar.
+
+El incidente de PROD sigue abierto. La salida aportada del run
+`38670853856`, intento 3, indica cancelación, no una causa de fallo del backend.
+La inicialización de la base ocurre antes de que la API empiece a escuchar;
+se investigará con logs de Render antes de cambiar código o credenciales.
+
+La consulta posterior de Render confirmó un error SSL durante el arranque
+del único deploy previo de PROD, que todavía usaba `e66f441`. También mostró
+que el hook usado por el job PROD disparaba el backend QA. Se inició un deploy
+controlado de `a3636bb` en el servicio PROD correcto. Render confirmó `live`
+y las consultas públicas de `/health` y `/api/expenses` devolvieron HTTP 200.
+La corrección del secret del hook y la verificación del pipeline completo
+siguen pendientes antes de cerrar el TP6.
+
+Se prepararon validaciones de URLs, mensajes por intento y límites de tiempo
+en los jobs de despliegue. No se considera suficiente recibir HTTP 200:
+también se debe comprobar que Render haya desplegado el SHA solicitado.
+
+Se preparó el procedimiento de rollback en `TP6-operacion.md` y un borrador
+de notas en `release-v6.0.0.md`. La release, el rollback y la verificación
+final de PROD están pendientes; no se presentan como hechos realizados.
+
+Se utilizó IA para inspeccionar el repositorio y preparar estos cambios.
+La causa raíz y los resultados operativos requieren evidencia de ejecución.
+
 ## TP1 — Git y flujo de trabajo
 
 ### Conflicto entre ramas
