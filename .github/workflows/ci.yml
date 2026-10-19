@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -174,15 +173,20 @@ jobs:
     environment: qa
 
     steps:
-      - name: Desplegar backend y frontend en QA
+      - name: Desplegar imagenes en QA
+        shell: bash
         env:
           HOOK_API: ${{ secrets.RENDER_HOOK_API_QA }}
           HOOK_FRONT: ${{ secrets.RENDER_HOOK_FRONT_QA }}
         run: |
-          echo "Desplegando commit $GITHUB_SHA en QA"
+          IMG_API="ghcr.io/${{ github.repository }}-backend:sha-$GITHUB_SHA"
+          IMG_FRONT="ghcr.io/${{ github.repository }}-frontend:sha-$GITHUB_SHA"
 
-          curl -fsS --max-time 30 "$HOOK_API&ref=$GITHUB_SHA"
-          curl -fsS --max-time 30 "$HOOK_FRONT&ref=$GITHUB_SHA"
+          echo "QA backend: $IMG_API"
+          echo "QA frontend: $IMG_FRONT"
+
+          curl -fsS --max-time 30 --get --data-urlencode "imgURL=$IMG_API" "$HOOK_API"
+          curl -fsS --max-time 30 --get --data-urlencode "imgURL=$IMG_FRONT" "$HOOK_FRONT"
 
       - name: Smoke test QA
         shell: bash
@@ -192,20 +196,17 @@ jobs:
         run: |
           : "${URL_API:?Falta URL_API}"
           : "${URL_FRONT:?Falta URL_FRONT}"
-          echo "Esperando que QA responda..."
+          echo "Esperando que QA responda para el commit $GITHUB_SHA..."
 
           for i in $(seq 1 30); do
-
             echo "Intento $i de 30"
 
             if curl -fsS --max-time 10 "$URL_API/health" \
               && curl -fsS --max-time 10 "$URL_API/api/expenses" > /dev/null \
               && curl -fsS --max-time 10 "$URL_FRONT/" > /dev/null \
               && curl -fsS --max-time 10 "$URL_FRONT/api/expenses" > /dev/null; then
-
               echo "QA responde correctamente"
               exit 0
-
             fi
 
             sleep 20
@@ -213,6 +214,7 @@ jobs:
 
           echo "QA no respondio a tiempo"
           exit 1
+
   deploy-prod:
     runs-on: ubuntu-latest
     needs: deploy-qa
@@ -224,7 +226,8 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - name: Desplegar PROD
+      - name: Desplegar imagenes en PROD
+        shell: bash
         env:
           HOOK_API: ${{ secrets.RENDER_HOOK_API_PROD }}
           HOOK_FRONT: ${{ secrets.RENDER_HOOK_FRONT_PROD }}
@@ -233,8 +236,15 @@ jobs:
             https://api.render.com/deploy/srv-db832vmq1p3s739cpto0\?*) ;;
             *) echo "RENDER_HOOK_API_PROD debe apuntar al servicio backend PROD"; exit 1 ;;
           esac
-          curl -fsS --max-time 30 "$HOOK_API&ref=$GITHUB_SHA"
-          curl -fsS --max-time 30 "$HOOK_FRONT&ref=$GITHUB_SHA"
+
+          IMG_API="ghcr.io/${{ github.repository }}-backend:sha-$GITHUB_SHA"
+          IMG_FRONT="ghcr.io/${{ github.repository }}-frontend:sha-$GITHUB_SHA"
+
+          echo "PROD backend: $IMG_API"
+          echo "PROD frontend: $IMG_FRONT"
+
+          curl -fsS --max-time 30 --get --data-urlencode "imgURL=$IMG_API" "$HOOK_API"
+          curl -fsS --max-time 30 --get --data-urlencode "imgURL=$IMG_FRONT" "$HOOK_FRONT"
 
       - name: Smoke test PROD
         shell: bash
@@ -244,8 +254,11 @@ jobs:
         run: |
           : "${URL_API:?Falta URL_API_PROD en el environment production}"
           : "${URL_FRONT:?Falta URL_FRONT_PROD en el environment production}"
+          echo "Esperando que PROD responda para el commit $GITHUB_SHA..."
+
           for i in $(seq 1 30); do
             echo "PROD: intento $i de 30"
+
             if curl -fsS --max-time 10 "$URL_API/health" &&
                curl -fsS --max-time 10 "$URL_API/api/expenses" > /dev/null &&
                curl -fsS --max-time 10 "$URL_FRONT/" > /dev/null &&
@@ -253,6 +266,7 @@ jobs:
               echo "PROD responde correctamente"
               exit 0
             fi
+
             sleep 20
           done
 
