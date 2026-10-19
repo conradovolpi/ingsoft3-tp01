@@ -214,10 +214,111 @@ jobs:
 
           echo "QA no respondio a tiempo"
           exit 1
-
-  deploy-prod:
+  integracion:
     runs-on: ubuntu-latest
     needs: deploy-qa
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      API_BASE_URL: https://misgastos-api-qa-volpi.onrender.com
+      E2E_BASE_URL: https://misgastos-front-qa-6v5o.onrender.com
+
+    steps:
+      - name: Bajar el codigo
+        uses: actions/checkout@v6
+
+      - name: Preparar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Probar API y base reales de QA
+        run: |
+          set -o pipefail
+          npx playwright test --project=integracion 2>&1 | tee integracion.log
+
+      - name: Resumen de integracion
+        if: ${{ !cancelled() }}
+        run: |
+          echo '### Integracion contra QA' >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat integracion.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar reporte de integracion
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-integracion
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 90
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: integracion
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      API_BASE_URL: https://misgastos-api-qa-volpi.onrender.com
+      E2E_BASE_URL: https://misgastos-front-qa-6v5o.onrender.com
+
+    steps:
+      - name: Bajar el codigo
+        uses: actions/checkout@v6
+
+      - name: Preparar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar Chromium y dependencias del sistema
+        run: npx playwright install --with-deps chromium
+
+      - name: Probar la aplicacion real de QA
+        run: |
+          set -o pipefail
+          npx playwright test --project=e2e 2>&1 | tee e2e.log
+
+      - name: Resumen de e2e
+        if: ${{ !cancelled() }}
+        run: |
+          echo '### E2E contra QA' >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat e2e.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar reporte de e2e
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-e2e
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 90
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: e2e
     timeout-minutes: 30
     environment: production
 
