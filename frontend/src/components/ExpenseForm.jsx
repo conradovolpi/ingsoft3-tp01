@@ -62,7 +62,7 @@ function ExpenseForm({ onAdd }) {
         required
       />
 
-      <button type="submit">Agregar gasto</button>
+      <button type="submit">Guardar gasto</button>
     </form>
   );
 }
