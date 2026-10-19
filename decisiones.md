@@ -1,39 +1,5 @@
 # Decisiones del proyecto
 
-## TP6 — CI/CD y operación (en preparación)
-
-Se revisó `main` en `a3636bb`. El pipeline despliega primero QA y luego
-PROD mediante el environment `production`. La aprobación manual depende
-de los required reviewers configurados en GitHub, todavía sin comprobar.
-
-El incidente de PROD sigue abierto. La salida aportada del run
-`38670853856`, intento 3, indica cancelación, no una causa de fallo del backend.
-La inicialización de la base ocurre antes de que la API empiece a escuchar;
-se investigará con logs de Render antes de cambiar código o credenciales.
-
-La consulta posterior de Render confirmó un error SSL durante el arranque
-del único deploy previo de PROD, que todavía usaba `e66f441`. También mostró
-que el hook usado por el job PROD disparaba el backend QA. Se inició un deploy
-controlado de `a3636bb` en el servicio PROD correcto. Render confirmó `live`
-y las consultas públicas de `/health` y `/api/expenses` devolvieron HTTP 200.
-La corrección del secret del hook y la verificación del pipeline completo
-siguen pendientes antes de cerrar el TP6.
-
-El frontend devolvía 502 al consultar gastos. Se estableció BACKEND_URL en
-la URL pública del backend PROD y se verificó HTTP 200 a través del proxy.
-El workflow propuesto comprueba también ese recorrido y rechaza hooks API
-PROD cuyo servicio no sea el esperado, evitando repetir el despliegue en QA.
-
-Se prepararon validaciones de URLs, mensajes por intento y límites de tiempo
-en los jobs de despliegue. No se considera suficiente recibir HTTP 200:
-también se debe comprobar que Render haya desplegado el SHA solicitado.
-
-Se preparó el procedimiento de rollback en `TP6-operacion.md` y un borrador
-de notas en `release-v6.0.0.md`. La release, el rollback y la verificación
-final de PROD están pendientes; no se presentan como hechos realizados.
-
-Se utilizó IA para inspeccionar el repositorio y preparar estos cambios.
-La causa raíz y los resultados operativos requieren evidencia de ejecución.
 
 ## TP1 — Git y flujo de trabajo
 
@@ -341,3 +307,93 @@ Esta actualizacion reemplaza los pendientes operativos descritos anteriormente.
 - No se modifico ni restauro el esquema de la base de datos.
 - Las notas definitivas se encuentran en release-v6.0.0.md.
 - La publicacion de la release se realiza como paso posterior a este cierre.
+## TP6 — CI/CD y operación (en preparación)
+
+Se revisó `main` en `a3636bb`. El pipeline despliega primero QA y luego
+PROD mediante el environment `production`. La aprobación manual depende
+de los required reviewers configurados en GitHub, todavía sin comprobar.
+
+El incidente de PROD sigue abierto. La salida aportada del run
+`38670853856`, intento 3, indica cancelación, no una causa de fallo del backend.
+La inicialización de la base ocurre antes de que la API empiece a escuchar;
+se investigará con logs de Render antes de cambiar código o credenciales.
+
+La consulta posterior de Render confirmó un error SSL durante el arranque
+del único deploy previo de PROD, que todavía usaba `e66f441`. También mostró
+que el hook usado por el job PROD disparaba el backend QA. Se inició un deploy
+controlado de `a3636bb` en el servicio PROD correcto. Render confirmó `live`
+y las consultas públicas de `/health` y `/api/expenses` devolvieron HTTP 200.
+La corrección del secret del hook y la verificación del pipeline completo
+siguen pendientes antes de cerrar el TP6.
+
+El frontend devolvía 502 al consultar gastos. Se estableció BACKEND_URL en
+la URL pública del backend PROD y se verificó HTTP 200 a través del proxy.
+El workflow propuesto comprueba también ese recorrido y rechaza hooks API
+PROD cuyo servicio no sea el esperado, evitando repetir el despliegue en QA.
+
+Se prepararon validaciones de URLs, mensajes por intento y límites de tiempo
+en los jobs de despliegue. No se considera suficiente recibir HTTP 200:
+también se debe comprobar que Render haya desplegado el SHA solicitado.
+
+Se preparó el procedimiento de rollback en `TP6-operacion.md` y un borrador
+de notas en `release-v6.0.0.md`. La release, el rollback y la verificación
+final de PROD están pendientes; no se presentan como hechos realizados.
+
+Se utilizó IA para inspeccionar el repositorio y preparar estos cambios.
+La causa raíz y los resultados operativos requieren evidencia de ejecución.
+
+
+## TP7 — Imágenes, integración y e2e
+## Enlaces del TP7
+
+- Paquetes públicos: [backend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-backend) y [frontend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-frontend).
+- Etiqueta de recuperación verificada en ambos entornos: `sha-700f7a93d3ae4fa6cbf95dfdf1feb8c1e3ac2080`.
+- Rotura: [commit 31e38f5](https://github.com/conradovolpi/ingsoft3-tp01/commit/31e38f58cf638bc4375eb4e52af4d9a1106250ba) y [corrida roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591).
+- Reportes de esa corrida: [integración verde](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207298029) y [e2e roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207258214). PROD quedó omitido.
+- [Recuperación completa en verde hasta PROD](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39297633337).
+- QA: [API](https://misgastos-api-qa-volpi.onrender.com) y [frontend](https://misgastos-front-qa-6v5o.onrender.com).
+- PROD: [API](https://misgastos-api-prod-fznx.onrender.com) y [frontend](https://misgastos-front-prod-i8sb.onrender.com).
+
+En la defensa se mostrarán los Events de los cuatro servicios: Deploy Hook, etiqueta de imagen y estado Live. Los entornos se mantendrán disponibles hasta esa instancia.
+
+### Imágenes y despliegue
+
+En TP6 Render reconstruía el código por entorno. Ahora CI publica las imágenes una vez y QA y PROD ejecutan las mismas mediante `imgURL`: build once, deploy many.
+
+Usamos `sha-<commit completo>` para relacionar cada imagen con su código. No publicamos `latest` porque cambia de significado. Las etiquetas pueden sobrescribirse; un digest identifica contenido inmutable.
+
+Cambiamos los cuatro servicios existentes a Existing Image, conservando URLs, variables e historial. La imagen inicial fue `sha-060f24d39e99cfcdef8eebcb396c72c2948fcb36`; cada pipeline selecciona después su propia etiqueta mediante el hook. Verificamos los paquetes públicos con docker pull sin credenciales.
+
+En Events comprobamos Deploy Hook, etiqueta y estado Live. El smoke solo comprueba disponibilidad: una versión anterior también podría responder. Verificar automáticamente el commit servido queda como mejora futura.
+
+La misma imagen del frontend sirve en ambos entornos: usa rutas relativas /api y Nginx recibe BACKEND_URL y DNS_RESOLVER por variables.
+
+### Pruebas
+
+Integración prueba la API y PostgreSQL reales de QA: alta, consulta y borrado; descripción vacía rechazada sin guardar; resumen mensual por categoría. Elegimos el resumen porque un total incorrecto afecta el uso diario.
+
+Es integración amplia: comprueba el entorno desplegado, pero depende de su disponibilidad. Una integración estrecha con base descartable tendría mayor aislamiento.
+
+Las e2e prueban desde Chromium: crear y borrar; validar monto obligatorio; crear y recargar para comprobar persistencia. No hay mocks. Los datos tienen nombres únicos y se eliminan verificando su ausencia, incluso mediante limpieza auxiliar si falla una prueba.
+
+Conservamos reglas y casos de borde en unitarios; integración cubre persistencia y e2e los recorridos principales del usuario. Evitamos repetir todas las combinaciones en las suites más costosas.
+
+Usamos esperas por condiciones, timeouts y un reintento en CI para tolerar cold starts, sin sleeps ni pruebas salteadas. Una prueba flaky cambia de resultado sin cambios relevantes y requiere investigar su causa.
+
+### Gate y evidencias
+
+La cadena es: builds → QA → integración → e2e → aprobación manual → PROD. Los reportes son separados y se publican también ante fallos. No se ignoran errores de las suites.
+
+Cambiamos el botón de “Agregar gasto” a “Guardar gasto”, sin modificar tests. Los unitarios aprobaron; en la corrida 39295215591, integración quedó verde, e2e roja y PROD omitido. El reporte mostró que faltaba el botón esperado: la API funcionaba y fallaba el recorrido del frontend.
+
+Restauramos el botón mediante el PR #36. La corrida 39297633337 aprobó las dos suites y desplegó en PROD tras la aprobación manual. El gate no cubre funciones que las pruebas no recorren.
+
+### Release
+
+v7.0.0 debe señalar el commit verificado en PROD. `git rev-list -n 1 v7.0.0` permite obtenerlo y formar las referencias de ambas imágenes con `sha-<commit>`.
+
+### Problemas y uso de IA
+
+Resolvimos el motor Docker detenido y verificamos la recuperación de un 502 transitorio cuya causa no quedó confirmada.
+
+La IA se utilizó principalmente para solucionar errores, y también como apoyo para configurar el pipeline, preparar las pruebas y redactar documentación. Verificamos la asistencia ejecutando tests, revisando reportes y comprobando los despliegues y el bloqueo de PROD.
