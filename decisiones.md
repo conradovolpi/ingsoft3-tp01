@@ -325,3 +325,19 @@ También se agregaron los reportes generados al `.gitignore` para no versionarlo
 Se utilizó ChatGPT como apoyo para diseñar los tests, configurar mocks, coverage, thresholds, Docker y GitHub Actions.
 
 Todo fue verificado ejecutando los tests localmente, dentro de Docker y en Pull Requests reales de GitHub.
+
+## Cierre operativo del TP6
+
+Esta actualizacion reemplaza los pendientes operativos descritos anteriormente.
+
+- Se corrigio RENDER_HOOK_API_PROD para desplegar en el backend PROD.
+- El PR #31 fue integrado en main: commit 5868803.
+- CI, tests, coverage, QA y PROD aprobaron en la ejecucion:
+  https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39270442867
+- Se comprobo la aprobacion manual de produccion.
+- Backend y frontend PROD quedaron Live en 5868803.
+- Se realizo rollback de ambos servicios a a3636bb y se verificaron los gastos.
+- Se regreso a 5868803 y se verifico nuevamente la aplicacion.
+- No se modifico ni restauro el esquema de la base de datos.
+- Las notas definitivas se encuentran en release-v6.0.0.md.
+- La publicacion de la release se realiza como paso posterior a este cierre.
