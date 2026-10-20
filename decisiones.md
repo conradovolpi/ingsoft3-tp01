@@ -270,13 +270,13 @@ PR rojo → verde → merge:
 https://github.com/conradovolpi/ingsoft3-tp01/pull/20
 
 Corrida roja:
-[PEGAR URL]
+https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/37704584623
 
 Corrida verde:
-[PEGAR URL]
+https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/37705121353
 
 Segundo PR rojo abierto hasta la defensa:
-[PEGAR URL]
+https://github.com/conradovolpi/ingsoft3-tp01/pull/22
 
 ## Problemas encontrados
 
@@ -397,3 +397,13 @@ v7.0.0 debe señalar el commit verificado en PROD. `git rev-list -n 1 v7.0.0` pe
 Resolvimos el motor Docker detenido y verificamos la recuperación de un 502 transitorio cuya causa no quedó confirmada.
 
 La IA se utilizó principalmente para solucionar errores, y también como apoyo para configurar el pipeline, preparar las pruebas y redactar documentación. Verificamos la asistencia ejecutando tests, revisando reportes y comprobando los despliegues y el bloqueo de PROD.
+
+## TP8 — Infraestructura como Código
+
+Elegí Terraform con Neon y Render, fijando los providers `kislerdm/neon` en `0.18.0` y `render-oss/render` en `1.9.1`. Declaré un entorno nuevo de preprod con proyecto, rol y base propios en Neon y dos servicios gratuitos en Render, usando las imágenes del TP7. La conexión a la base y la URL del backend se derivan de los recursos declarados.
+
+El primer apply falló porque Neon exigía `org_id`; lo resolví agregando el identificador de mi organización al proyecto. Las credenciales se leen desde variables de entorno. El estado local, que contiene datos sensibles, queda excluido de Git; `.terraform.lock.hcl` se versiona.
+
+Verifiqué los endpoints de vida y acceso a la base, el frontend y la persistencia de un gasto al recargar. Después destruí los cinco recursos y los recreé con apply, repetí las pruebas y comprobé `No changes`. QA y producción siguieron respondiendo. Dejé preprod destruido al terminar.
+
+Utilicé ChatGPT para interpretar la consigna, preparar la configuración de Terraform y resolver errores. Verifiqué la asistencia mediante validate, lectura de planes, pruebas de la aplicación y el ciclo destroy → apply.

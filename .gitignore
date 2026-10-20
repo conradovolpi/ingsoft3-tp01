@@ -21,3 +21,11 @@ coveragereport/
 TestResults/
 backend/MisGastos.Tests/TestResults/
 backend/MisGastos.Tests/coverage.cobertura.xml
+# Terraform: estado y valores privados
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log
