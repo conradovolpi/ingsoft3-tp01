@@ -5,6 +5,12 @@ using MisGastos.Api.Repositories;
 using MisGastos.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseSentry(o =>
+{
+    o.Dsn = builder.Configuration["SENTRY_DSN"];
+    o.TracesSampleRate = 1.0;
+    o.SendDefaultPii = false;
+});
 
 builder.Services.AddControllers();
 
@@ -57,5 +63,15 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
+
+if (app.Configuration["SENTRY_TEST_ENABLED"] == "true")
+{
+    app.MapGet("/api/sentry-test", () =>
+    {
+        throw new InvalidOperationException(
+            "TP9: error controlado para verificar Sentry");
+        return Results.Ok();
+    });
+}
 
 app.Run();
