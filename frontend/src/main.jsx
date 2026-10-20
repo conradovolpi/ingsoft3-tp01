@@ -13,15 +13,6 @@ Sentry.init({
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {window.location.hash === '#sentry-test' && (
-      <button
-        onClick={() => {
-          throw new Error('TP9: error controlado del frontend')
-        }}
-      >
-        Probar error en Sentry
-      </button>
-    )}
     <App />
   </StrictMode>,
 )
