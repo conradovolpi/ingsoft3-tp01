@@ -64,4 +64,14 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
 
+if (app.Configuration["SENTRY_TEST_ENABLED"] == "true")
+{
+    app.MapGet("/api/sentry-test", () =>
+    {
+        throw new InvalidOperationException(
+            "TP9: error controlado para verificar Sentry");
+        return Results.Ok();
+    });
+}
+
 app.Run();
