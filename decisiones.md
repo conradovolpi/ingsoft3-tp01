@@ -407,3 +407,11 @@ El primer apply falló porque Neon exigía `org_id`; lo resolví agregando el id
 Verifiqué los endpoints de vida y acceso a la base, el frontend y la persistencia de un gasto al recargar. Después destruí los cinco recursos y los recreé con apply, repetí las pruebas y comprobé `No changes`. QA y producción siguieron respondiendo. Dejé preprod destruido al terminar.
 
 Utilicé ChatGPT para interpretar la consigna, preparar la configuración de Terraform y resolver errores. Verifiqué la asistencia mediante validate, lectura de planes, pruebas de la aplicación y el ciclo destroy → apply.
+
+## TP9 — DevSecOps y observabilidad
+
+Activamos Dependabot, CodeQL y push protection. Mergeamos el [PR #46](https://github.com/conradovolpi/ingsoft3-tp01/pull/46), que actualizó `@vitejs/plugin-react` de 6.1.0 a 6.1.2 (patch), tras revisar sus cambios y comprobar CI en verde. Corregimos las cuatro alertas de permisos de Actions y CodeQL quedó sin alertas abiertas.
+
+UptimeRobot monitorea `/health` de PROD: avisó la caída en 5 minutos (17:45–17:50), registró la recuperación y quedó pausado. Sentry recibió errores del backend y frontend. En la muestra de una hora, `GET /api/Expenses` fue la operación más usada y más lenta: 8 pedidos y P95 de 2,40 s; originó el [issue #59](https://github.com/conradovolpi/ingsoft3-tp01/issues/59) en el tablero.
+
+Resolvimos el 404 inicial del monitor apuntándolo a `/health` y retiramos las pruebas temporales de error. Usamos ChatGPT para configurar, resolver problemas y documentar; verificamos con builds, tests, CI/CD, alertas del monitor y eventos y trazas reales en Sentry.
