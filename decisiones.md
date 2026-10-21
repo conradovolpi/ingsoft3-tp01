@@ -1,5 +1,32 @@
 # Decisiones del proyecto
 
+## Enlaces de entrega P2 — TP6 y TP7
+
+- Aplicación: **MisGastos**.
+- QA (frontend): https://misgastos-front-qa-6v5o.onrender.com
+- PROD (frontend): https://misgastos-front-prod-i8sb.onrender.com
+- API QA: https://misgastos-api-qa-volpi.onrender.com
+- API PROD: https://misgastos-api-prod-fznx.onrender.com
+
+### TP6
+
+- [Release v6.0.0](https://github.com/conradovolpi/ingsoft3-tp01/releases/tag/v6.0.0).
+- [Pipeline aprobado hasta PROD](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39270442867).
+- [Pase a PROD rechazado con motivo, intento 2](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39468994099/attempts/2).
+- [Notas de release y rollback](https://github.com/conradovolpi/ingsoft3-tp01/blob/main/release-v6.0.0.md).
+- [Workflow del cierre de TP6](https://github.com/conradovolpi/ingsoft3-tp01/blob/v6.0.0/.github/workflows/ci.yml).
+
+### TP7
+
+- Paquetes públicos: [backend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-backend) y [frontend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-frontend).
+- Etiqueta de recuperación verificada en ambos entornos: `sha-700f7a93d3ae4fa6cbf95dfdf1feb8c1e3ac2080`.
+- Rotura: [commit 31e38f5](https://github.com/conradovolpi/ingsoft3-tp01/commit/31e38f58cf638bc4375eb4e52af4d9a1106250ba) y [corrida roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591).
+- Reportes de esa corrida: [integración verde](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207298029) y [e2e roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207258214). PROD quedó omitido.
+- [Recuperación completa en verde hasta PROD](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39297633337).
+- QA: [API](https://misgastos-api-qa-volpi.onrender.com) y [frontend](https://misgastos-front-qa-6v5o.onrender.com).
+- PROD: [API](https://misgastos-api-prod-fznx.onrender.com) y [frontend](https://misgastos-front-prod-i8sb.onrender.com).
+- [Release v7.0.0](https://github.com/conradovolpi/ingsoft3-tp01/releases/tag/v7.0.0).
+- [Pipeline del cierre de v7.0.0](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39302852026).
 
 ## TP1 — Git y flujo de trabajo
 
@@ -292,67 +319,58 @@ Se utilizó ChatGPT como apoyo para diseñar los tests, configurar mocks, covera
 
 Todo fue verificado ejecutando los tests localmente, dentro de Docker y en Pull Requests reales de GitHub.
 
-## Cierre operativo del TP6
+## TP6 — CI/CD y operación
 
-Esta actualizacion reemplaza los pendientes operativos descritos anteriormente.
+### Cadena de despliegue y artefactos
 
-- Se corrigio RENDER_HOOK_API_PROD para desplegar en el backend PROD.
-- El PR #31 fue integrado en main: commit 5868803.
-- CI, tests, coverage, QA y PROD aprobaron en la ejecucion:
-  https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39270442867
-- Se comprobo la aprobacion manual de produccion.
-- Backend y frontend PROD quedaron Live en 5868803.
-- Se realizo rollback de ambos servicios a a3636bb y se verificaron los gastos.
-- Se regreso a 5868803 y se verifico nuevamente la aplicacion.
-- No se modifico ni restauro el esquema de la base de datos.
-- Las notas definitivas se encuentran en release-v6.0.0.md.
-- La publicacion de la release se realiza como paso posterior a este cierre.
-## TP6 — CI/CD y operación (en preparación)
+En el [workflow de v6.0.0](https://github.com/conradovolpi/ingsoft3-tp01/blob/v6.0.0/.github/workflows/ci.yml), los builds del backend y frontend ejecutan tests y coverage. Los pasos siguientes se ejecutan sólo si los anteriores aprobaron. La publicación en GHCR se habilita únicamente para un push a main; en un PR se construye y verifica sin publicar. Así se evita publicar una imagen que haya fallado la verificación de ese componente.
 
-Se revisó `main` en `a3636bb`. El pipeline despliega primero QA y luego
-PROD mediante el environment `production`. La aprobación manual depende
-de los required reviewers configurados en GitHub, todavía sin comprobar.
+QA depende de ambos builds mediante needs y se habilita únicamente en un push a main. PROD depende del smoke de QA y usa el environment production con aprobación manual. Desde TP7, la cadena agrega integración y e2e entre QA y PROD.
 
-El incidente de PROD sigue abierto. La salida aportada del run
-`38670853856`, intento 3, indica cancelación, no una causa de fallo del backend.
-La inicialización de la base ocurre antes de que la API empiece a escuchar;
-se investigará con logs de Render antes de cambiar código o credenciales.
+Es Continuous Delivery: el pipeline deja una versión lista para desplegar, pero una persona decide su pase a PROD. Con Continuous Deployment también se automatizaría esa decisión.
 
-La consulta posterior de Render confirmó un error SSL durante el arranque
-del único deploy previo de PROD, que todavía usaba `e66f441`. También mostró
-que el hook usado por el job PROD disparaba el backend QA. Se inició un deploy
-controlado de `a3636bb` en el servicio PROD correcto. Render confirmó `live`
-y las consultas públicas de `/health` y `/api/expenses` devolvieron HTTP 200.
-La corrección del secret del hook y la verificación del pipeline completo
-siguen pendientes antes de cerrar el TP6.
+En TP6 Render reconstruía el código del SHA solicitado en cada entorno. Aunque fuera el mismo commit, no se garantizaba reutilizar el binario comprobado en CI: dos reconstrucciones podían resolver dependencias de forma distinta. En TP7 se corrigió esa limitación usando las imágenes de GHCR ya construidas por CI.
 
-El frontend devolvía 502 al consultar gastos. Se estableció BACKEND_URL en
-la URL pública del backend PROD y se verificó HTTP 200 a través del proxy.
-El workflow propuesto comprueba también ese recorrido y rechaza hooks API
-PROD cuyo servicio no sea el esperado, evitando repetir el despliegue en QA.
+### Environments, secrets y aprobación
 
-Se prepararon validaciones de URLs, mensajes por intento y límites de tiempo
-en los jobs de despliegue. No se considera suficiente recibir HTTP 200:
-también se debe comprobar que Render haya desplegado el SHA solicitado.
+Los hooks RENDER_HOOK_API_QA y RENDER_HOOK_FRONT_QA están en el environment qa; RENDER_HOOK_API_PROD y RENDER_HOOK_FRONT_PROD, en production. El job de PROD obtiene también URL_API_PROD y URL_FRONT_PROD de las variables de ese environment. Los valores privados no están versionados. GITHUB_TOKEN lo emite GitHub para cada ejecución y los jobs de build tienen packages: write para publicar en GHCR.
 
-Se preparó el procedimiento de rollback en `TP6-operacion.md` y un borrador
-de notas en `release-v6.0.0.md`. La release, el rollback y la verificación
-final de PROD están pendientes; no se presentan como hechos realizados.
+Antes de aprobar reviso el SHA, los tests y coverage, el resultado de QA y su smoke y, desde TP7, los reportes de integración/e2e y la imagen solicitada. En Render contrasto el estado Live y la referencia de imagen. También reviso los cambios, la compatibilidad con la base y la versión de recuperación. La aprobación protege los secrets y el inicio del job de producción; no demuestra por sí sola que la aplicación funcione.
 
-Se utilizó IA para inspeccionar el repositorio y preparar estos cambios.
-La causa raíz y los resultados operativos requieren evidencia de ejecución.
+El [run 39270442867](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39270442867) registra la aprobación manual y el despliegue de PROD exitoso.
+
+### Pase a producción rechazado
+
+El 21/10/2026 se reintentó únicamente deploy-prod de una corrida anterior, como prueba controlada del gate. El job quedó esperando la aprobación obligatoria y se rechazó antes de ejecutar pasos.
+
+Evidencia: [corrida 39468994099, intento 2](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39468994099/attempts/2), sección Deployment protection rules.
+
+Motivo registrado: el candidato 716a07a era anterior al cierre de TP9 (cb0fc7b / v9.0.0). Promoverlo hubiera sido volver a una versión anterior sin un rollback planificado y validado. Se conservó la versión vigente de PROD. GitHub registra state: rejected con el comentario y deploy-prod fallido sin pasos ejecutados. Una cancelación de workflow no equivale a este rechazo.
+
+### Smoke y free tier
+
+El smoke consulta /health, /api/expenses, la página del frontend y /api/expenses a través de su proxy. Comprueba que la API escucha, que puede leer datos y que el recorrido frontend → backend responde. No verifica todos los flujos ni demuestra que un HTTP 200 corresponda al SHA nuevo: por eso se contrasta también el deploy en Render.
+
+Los servicios gratuitos pueden dormir y necesitan arrancar ante una petición. El workflow usa intentos y timeouts; para la defensa se abren QA y PROD con anticipación. El 21/10 se verificó que ambas páginas terminaron mostrando los gastos tras el arranque. No se usó fallback local.
+
+### Patrón de despliegue y rollback
+
+El proyecto usa el mecanismo de despliegue de Render y una promoción secuencial QA → aprobación → PROD. No se implementaron canary, blue-green ni feature flags. Para un servicio que necesite reducir el riesgo de una actualización elegiría blue-green: probar la nueva versión por separado, cambiar el tráfico y conservar la anterior para recuperarse. Requiere capacidad adicional y compatibilidad del esquema.
+
+En el cierre operativo de TP6 se verificó 5868803, se volvió con backend y frontend a a3636bb, se consultaron los gastos y se regresó a 5868803. Las [notas publicadas de v6.0.0](https://github.com/conradovolpi/ingsoft3-tp01/releases/tag/v6.0.0) registran el resultado. No se restauró ni modificó el esquema de la base.
+
+El procedimiento consiste en identificar el último par compatible de frontend/backend, impedir promociones concurrentes, seleccionar esa versión en ambos servicios, esperar Live y repetir salud, gastos y proxy. El cronómetro se inicia al ordenar la recuperación y se detiene cuando pasan las verificaciones de ambos servicios. No quedó registrado el tiempo total de la práctica original; no se presenta un tiempo estimado como una medición. Volver el código atrás no revierte migraciones ni recupera datos borrados.
+
+### Problemas y uso de IA
+
+El backend PROD falló al iniciar por un error SSL con una versión previa. Además, el hook de API PROD apuntaba a QA y el proxy del frontend PROD devolvía 502. Se corrigió el hook, se estableció BACKEND_URL en el frontend y se incorporó la comprobación del recorrido por el proxy. El [PR #31](https://github.com/conradovolpi/ingsoft3-tp01/pull/31) y la [corrida aprobada](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39270442867) documentan el cierre.
+
+Se utilizó ChatGPT para diagnosticar, preparar cambios, revisar el pipeline y organizar la documentación. Se verificó la asistencia mediante tests, coverage, QA/PROD, revisión de despliegues, la práctica de rollback y el rechazo explícito del pase antiguo. Esta sección reemplaza las notas de preparación previas.
 
 
 ## TP7 — Imágenes, integración y e2e
-## Enlaces del TP7
 
-- Paquetes públicos: [backend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-backend) y [frontend](https://github.com/users/conradovolpi/packages/container/package/ingsoft3-tp01-frontend).
-- Etiqueta de recuperación verificada en ambos entornos: `sha-700f7a93d3ae4fa6cbf95dfdf1feb8c1e3ac2080`.
-- Rotura: [commit 31e38f5](https://github.com/conradovolpi/ingsoft3-tp01/commit/31e38f58cf638bc4375eb4e52af4d9a1106250ba) y [corrida roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591).
-- Reportes de esa corrida: [integración verde](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207298029) y [e2e roja](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39295215591/artifacts/12207258214). PROD quedó omitido.
-- [Recuperación completa en verde hasta PROD](https://github.com/conradovolpi/ingsoft3-tp01/actions/runs/39297633337).
-- QA: [API](https://misgastos-api-qa-volpi.onrender.com) y [frontend](https://misgastos-front-qa-6v5o.onrender.com).
-- PROD: [API](https://misgastos-api-prod-fznx.onrender.com) y [frontend](https://misgastos-front-prod-i8sb.onrender.com).
+Los enlaces de paquetes, corridas, reportes y entornos están al inicio de este documento.
 
 En la defensa se mostrarán los Events de los cuatro servicios: Deploy Hook, etiqueta de imagen y estado Live. Los entornos se mantendrán disponibles hasta esa instancia.
 
